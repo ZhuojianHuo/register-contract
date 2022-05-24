@@ -73,18 +73,6 @@ public class WorksContract implements ContractInterface {
     }
 
     @Transaction
-    public WorksQueryResultList queryWorksByName(final Context ctx, String author) {
-
-        log.info(String.format("使用 author 查询 works , author = %s" , author));
-
-        String query = String.format("{\"selector\":{\"author\":\"%s\"} }", author);
-
-        log.info(String.format("query string = %s" , query));
-        return queryWorks(ctx.getStub() , query);
-    }
-
-
-    @Transaction
     public Works createWorks(final Context ctx, final String key , Integer  id, String title , String author , String press, String status, Date pressDate) {
 
         ChaincodeStub stub = ctx.getStub();
