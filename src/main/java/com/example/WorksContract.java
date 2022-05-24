@@ -26,10 +26,10 @@ import java.util.logging.Level;
 
 
 @Contract(
-        name = "CatContract",
+        name = "WorksContract",
         info = @Info(
-                title = "Cat contract",
-                description = "The hyperlegendary car contract",
+                title = "Works contract",
+                description = "The hyperlegendary works contract",
                 version = "0.0.1-SNAPSHOT",
                 license = @License(
                         name = "Apache 2.0 License",
@@ -42,15 +42,29 @@ import java.util.logging.Level;
 @Log
 public class WorksContract implements ContractInterface {
 
-
     @Transaction
-    public Works queryWorks(final Context ctx, final String author) {
+    public void initLedger(final Context ctx) {
 
         ChaincodeStub stub = ctx.getStub();
-        String worksState = stub.getStringState(author);
+        Works works = new Works().setId("1")
+                .setTitle("title")
+                .setPress("press")
+                .setAuthor("author")
+                .setStatus("status")
+                .setPressDate("2022-02-18");
+        stub.putStringState(works.getName() , JSON.toJSONString(works));
+        
+
+    }
+
+    @Transaction
+    public Works queryWorks(final Context ctx, final String key) {
+
+        ChaincodeStub stub = ctx.getStub();
+        String worksState = stub.getStringState(key);
 
         if (StringUtils.isBlank(worksState)) {
-            String errorMessage = String.format("Works %s does not exist.", author);
+            String errorMessage = String.format("Works %s does not exist.", key);
             System.out.println(errorMessage);
             throw new ChaincodeException(errorMessage);
         }
@@ -69,50 +83,9 @@ public class WorksContract implements ContractInterface {
         return queryWorks(ctx.getStub() , query);
     }
 
-    @Transaction
-    public WorksQueryPageResult queryWorksPageByName(final Context ctx, String author , Integer pageSize , String bookmark) {
-
-        log.info(String.format("使用 author 分页查询 works , name = %s" , author));
-
-        String query = String.format("{\"selector\":{\"author\":\"%s\"} }", author);
-
-        log.info(String.format("query string = %s" , query));
-
-        ChaincodeStub stub = ctx.getStub();
-        QueryResultsIteratorWithMetadata<KeyValue> queryResult = stub.getQueryResultWithPagination(query, pageSize, bookmark);
-
-        List<WorksQueryResult> works = Lists.newArrayList();
-
-        if (! IterableUtils.isEmpty(queryResult)) {
-            for (KeyValue kv : queryResult) {
-                works.add(new WorksQueryResult().setKey(kv.getKey()).setWorks(JSON.parseObject(kv.getStringValue() , Works.class)));
-            }
-        }
-
-        return new WorksQueryPageResult()
-                .setWorks(works)
-                .setBookmark(queryResult.getMetadata().getBookmark());
-    }
-
-
-    private WorksQueryResultList queryWorks(ChaincodeStub stub , String query) {
-
-        WorksQueryResultList resultList = new WorksQueryResultList();
-        QueryResultsIterator<KeyValue> queryResult = stub.getQueryResult(query);
-        List<WorksQueryResult> results = Lists.newArrayList();
-
-        if (! IterableUtils.isEmpty(queryResult)) {
-            for (KeyValue kv : queryResult) {
-                results.add(new WorksQueryResult().setKey(kv.getKey()).setWorks(JSON.parseObject(kv.getStringValue() , Works.class)));
-            }
-            resultList.setWorks(results);
-        }
-
-        return resultList;
-    }
 
     @Transaction
-    public Works saveWorks(final Context ctx, final String key , Integer  id, String title , String author , String press, String status, Date pressDate) {
+    public Works createWorks(final Context ctx, final String key , Integer  id, String title , String author , String press, String status, Date pressDate) {
 
         ChaincodeStub stub = ctx.getStub();
         String worksState = stub.getStringState(key);
@@ -178,21 +151,6 @@ public class WorksContract implements ContractInterface {
         return JSON.parseObject(worksState , Works.class);
     }
 
-//    @Transaction
-//    public byte[] queryPrivateWorksHash(final Context ctx, final String collection ,final String key) {
-//
-//        ChaincodeStub stub = ctx.getStub();
-//
-//        byte[] hash = stub.getPrivateDataHash(collection, key);
-//
-//        if (ArrayUtils.isEmpty(hash)) {
-//            String errorMessage = String.format("Private Works %s does not exist", key);
-//            log.log(Level.WARNING , errorMessage);
-//            throw new ChaincodeException(errorMessage);
-//        }
-//
-//        return hash;
-//    }
 
     @Override
     public void beforeTransaction(Context ctx) {
